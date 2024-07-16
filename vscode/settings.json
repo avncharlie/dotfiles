@@ -1,0 +1,77 @@
+{
+    "workbench.colorTheme": "One Dark Pro",
+    "vim.incsearch": true,
+    "vim.useSystemClipboard": true,
+    "vim.hlsearch": true,
+    "vim.leader": ",",
+    "vim.normalModeKeyBindingsNonRecursive": [
+        {
+            "before": ["K"],
+            //"commands": ["editor.action.peekDefinition"],
+            "commands": ["editor.action.showHover"],
+            "silent": true
+        },
+        {
+            "before": ["g", "r"],
+            "commands": ["editor.action.goToReferences"]
+        },
+        {
+            "before": ["g", "n"],
+            "commands": [":bn"]
+        },
+        {
+            "before": ["g", "p"],
+            "commands": [":bp"]
+        },
+        {
+            "before": ["g", "x"],
+            "commands": [":bd"]
+        },
+        {
+            "before": ["<c-l>"],
+            "commands": [":nohl"]
+        },
+        {
+            "before": ["<leader>", "r", "r"],
+            "commands": ["editor.action.rename"]
+        },
+        {
+            "before": ["<leader>", "s", "s"],
+            "commands": ["workbench.action.gotoSymbol"]
+        },
+        {
+            "before": ["<leader>", "c", "a"],
+            "commands": ["editor.action.codeAction"]
+        },
+        {
+            "before": ["<leader>", "f"],
+            "commands": ["workbench.action.findInFiles"]
+        },
+        {
+            "before": ["<c-f>"],
+            "commands": ["workbench.action.quickOpen"]
+        },
+        {
+            "before": ["<c-n>"],
+            "commands": ["workbench.view.explorer"],
+        },
+        {
+            "before": ["z", "c"],
+            "command": "editor.closeFold",
+        },
+        {
+            "before": ["z", "o"],
+            "command": "editor.openFold",
+        },
+        {
+            "before": ["z", "a"],
+            "command": "editor.toggleFold",
+        }
+    ],
+    "extensions.experimental.affinity": {
+        "vscodevim.vim": 1
+    },
+    "python.createEnvironment.trigger": "off",
+    "editor.wordWrap": "on",
+    "editor.rulers": [ 80 ],
+}

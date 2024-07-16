@@ -1,0 +1,320 @@
+"  ______                    _   _       _     
+" |  ____|                  | | (_)     | |    
+" | |__   ___ ___  ___ _ __ | |_ _  __ _| |___ 
+" |  __| / __/ __|/ _ \ '_ \| __| |/ _` | / __|
+" | |____\__ \__ \  __/ | | | |_| | (_| | \__ \
+" |______|___/___/\___|_| |_|\__|_|\__,_|_|___/
+
+" move vertically by visual line
+nnoremap j gj
+nnoremap k gk
+syntax on                               " enable syntax highlighting
+set exrc                                " run vimrcs in current folder
+set secure                              " mitigate security risks from set exrc
+set expandtab                           " expand all tabs to spaces
+set shiftwidth=4                        " how many spaces to indent code by
+set tabstop=4                           " show tabs as spaces
+set ic                                  " ignore case while searching
+set incsearch                           " search after every keystroke
+set spell spelllang=en_au               " language to spell check in
+set nospell                             " by default don't spell check
+let mapleader = ","                     " map leader to comma
+" map ' to search back (as , is taken by leader)
+nnoremap ' ,                            
+set showcmd                             " show commands used vim
+set scrolloff=5                         " keep cursor five lines from bottom
+set clipboard=unnamed                   " yank everything into system clipboard
+set backspace=indent,eol,start          " make backspace function as expected
+set wildmenu                            " auto completion for commands
+set number                              " turn on line numbers
+set mouse=a                             " mouse support
+if &term =~ '^screen'
+    set ttymouse=xterm2                 " mouse support within tmux
+endif
+colorscheme Tomorrow-Night-Eighties     " use eighties colorsheme
+let g:netrw_liststyle = 3               " default netrw in tree mode
+set hidden                              " switch buffers without saving
+set hlsearch                            " highlight every match while searching
+set termguicolors                       " use 24 bit colour
+" C-l to hide search highlighting
+nnoremap <C-L> :nohl<CR>
+
+" handle buffers
+map gn :bn<cr>
+map gp :bp<cr>
+map gc :bd<cr> 
+
+"  _____  _             _
+" |  __ \| |           (_)
+" | |__) | |_   _  __ _ _ _ __  ___
+" |  ___/| | | | |/ _` | | '_ \/ __|
+" | |    | | |_| | (_| | | | | \__ \
+" |_|    |_|\__,_|\__, |_|_| |_|___/
+"                  __/ |
+"                 |___/
+
+call plug#begin('~/.vim/bundle')
+
+" colorschemes
+Plug 'chriskempson/base16-vim'
+
+" undo analyser (c-y)
+Plug 'simnalamburt/vim-mundo'
+
+" easy surround
+Plug 'tpope/vim-surround'
+
+" nerdtree
+Plug 'preservim/nerdtree' 
+Plug 'ryanoasis/vim-devicons'
+Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
+
+" buffers on tabline
+Plug 'ap/vim-buftabline'
+
+" latex plugin
+Plug 'lervag/vimtex'
+
+" CoC.nvim
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
+" installed through command
+"   - coc-rls (Rust)
+"   - coc-pyright (Python)
+"   - coc-clangd (C)
+"   - coc-java (Java)
+"   - coc-rome(JavaScript)
+"   - coc-symbol-line
+"   - coc-highlight
+" installed in :CocConfig
+"   - haskell langauge server 
+
+" debugger
+Plug 'puremourning/vimspector'
+" installed:
+"   - chrome
+
+" navigate vim and tmux with one keybinding scheme
+Plug 'christoomey/vim-tmux-navigator'
+
+" quickfix preview
+Plug 'bfrg/vim-qf-preview'
+
+" fzf 
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
+
+" coc + fzf
+Plug 'antoinemadec/coc-fzf'
+
+" vista (symbols viewer)
+" frozen due to bugfix manually applied (Tech/Vim/vista_fix_symbol_fzf)
+Plug 'liuchengxu/vista.vim', { 'frozen': 1 }
+
+" sneak (quick jump)
+Plug 'justinmk/vim-sneak'
+
+" all plugins must go before here
+call plug#end()
+
+" vimspector mappings (same as HUMAN mappings)
+nnoremap <F5> <Plug>VimspectorContinue
+nnoremap <F3> <Plug>VimspectorRestart
+nnoremap <F4> <Plug>VimspectorRestart
+nnoremap <F6> <Plug>VimspectorPause
+nnoremap <F9> <Plug>VimspectorToggleBreakpoint
+nnoremap <leader><F9> <Plug>VimspectorToggleConditionalBreakpoint
+nnoremap <F8> <Plug>VimspectorAddFunctionBreakpoint
+nnoremap <leader><F8> <Plug>VimspectorRunToCursor
+nnoremap <F10> <Plug>VimspectorStepOver
+nnoremap <F11> <Plug>VimspectorStepInto
+nnoremap <F12> <Plug>VimspectorStepOut
+nnoremap <silent><leader><F5> :VimspectorReset<CR>
+
+" map sneak backwards repeat to replacement
+map ' <Plug>Sneak_,
+" replace f, F, t, T
+map f <Plug>Sneak_f
+map F <Plug>Sneak_F
+map t <Plug>Sneak_t
+map T <Plug>Sneak_T
+" case insensitive sneak
+let g:sneak#use_ic_scs = 1
+
+" vista
+" enable fzf preview, use coc as executive always
+let g:vista_default_executive = 'coc'
+let g:vista_fzf_preview = ['blah'] " doesn't, atter will be overridden
+" ,s to search document for symbols
+nnoremap <silent><nowait> <leader>s  :Vista finder fzf:coc<CR>
+let g:vista_cursor_delay = 10 " might be too fast, turn up if getting slow
+" C-k to toggle symbol outline
+nnoremap <silent> <C-k> :Vista!!<CR>
+" also see 'in my zshrc' below
+
+" fzf
+command! -bang -nargs=* Ag call fzf#vim#ag(<q-args>, {'options': '--delimiter : --nth 4..'}, <bang>0)
+" C-f to search files
+nnoremap <silent> <C-f> :Files<CR>
+" ,f to text in directory
+nnoremap <silent> <Leader>f :Rg<CR>
+" ,/ to in current buffer 
+nnoremap <silent> <Leader>/ :BLines<CR>
+" in my zshrc:
+" export FZF_DEFAULT_COMMAND='rg --files'
+" export FZF_DEFAULT_OPTS='-m --height 50% --border'
+" export BAT_THEME="OneHalfDark"
+
+" vimtex 
+let g:vimtex_view_method='skim'
+
+" mundo toggle
+nnoremap <C-y> :MundoToggle<CR>
+
+" coc settings
+" tab / shift-tab to select
+inoremap <silent><expr> <TAB>
+      \ coc#pum#visible() ? coc#pum#next(1) :
+      \ CheckBackspace() ? "\<Tab>" :
+      \ coc#refresh()
+inoremap <expr><S-TAB> coc#pum#visible() ? coc#pum#prev(1) : "\<C-h>"
+function! CheckBackspace() abort
+  let col = col('.') - 1
+  return !col || getline('.')[col - 1]  =~# '\s'
+endfunction
+" use [g and ]g to navigate diagnostics, :CocDiagnostics to populate
+nmap <silent> [g <Plug>(coc-diagnostic-prev)
+nmap <silent> ]g <Plug>(coc-diagnostic-next)
+" code navigation
+nmap <silent> gd <Plug>(coc-definition) 
+nmap <silent> gr <Plug>(coc-references)
+nmap <silent> gy <Plug>(coc-type-definition)
+nmap <silent> gi <Plug>(coc-implementation)
+nmap <silent><leader>r <Plug>(coc-rename)
+nmap <silent><leader>rn :CocCommand workspace.inspectEdit<CR>
+" K to show d:ocumentation in preview window
+nnoremap <silent> K :call ShowDocumentation()<CR>
+function! ShowDocumentation()
+  if CocAction('hasProvider', 'hover')
+    call CocActionAsync('doHover')
+  else
+    call feedkeys('K', 'in')
+  endif
+endfunction
+" Highlight the symbol and its references when holding the cursor
+"autocmd CursorHold * silent call CocActionAsync('highlight')
+"" status symbol line (only for files that need it)
+"autocmd FileType python set laststatus=2
+"autocmd FileType javascript set laststatus=2
+"autocmd FileType java set laststatus=2
+"autocmd FileType json set laststatus=2
+"autocmd FileType vim set laststatus=2
+"set statusline+=%{%get(b:,\"coc_symbol_line_plain\",\"\")%}
+"set updatetime=250 " set to higher if slow
+
+" set tmux navigator to basic settings
+let g:tmux_navigator_no_mappings = 1
+nnoremap <silent> <C-b>h :TmuxNavigateLeft<cr>
+nnoremap <silent> <C-b>j :TmuxNavigateDown<cr>
+nnoremap <silent> <C-b>k :TmuxNavigateUp<cr>
+nnoremap <silent> <C-b>l :TmuxNavigateRight<cr>
+nnoremap <silent> <C-b>\ :TmuxNavigatePrevious<cr>
+
+map <C-n> :NERDTreeToggle<CR>
+" close vim if the only window left open is NERDTree
+autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+
+" quickfix preview
+augroup qfpreview
+    autocmd!
+    autocmd FileType qf nmap <buffer> p <plug>(qf-preview-open)
+augroup END
+" j and k to go through qf list
+let g:qfpreview = {'next': 'j', 'previous': 'k'}
+
+
+"  _______                _
+" |__   __|              | |
+"    | | ___   __ _  __ _| | ___  ___
+"    | |/ _ \ / _` |/ _` | |/ _ \/ __|
+"    | | (_) | (_| | (_| | |  __/\__ \
+"    |_|\___/ \__, |\__, |_|\___||___/
+"              __/ | __/ |
+"             |___/ |___/
+
+" quickfix toggle
+function! ToggleQuickFix()
+    if empty(filter(getwininfo(), 'v:val.quickfix'))
+        copen
+    else
+        cclose
+    endif
+endfunction
+map <silent> ,q :call ToggleQuickFix()<CR>
+
+" location list toggle
+function! ToggleLocationList()
+    if empty(filter(getwininfo(), 'v:val.loclist'))
+        lopen
+    else
+        lclose
+    endif
+endfunction
+map <silent> ,w :call ToggleLocationList()<CR>
+
+" paste toggle
+let g:ispastetoggle = 0
+let g:origLastStatus = 0
+func! TogglePaste()
+    if g:ispastetoggle == 0
+        let g:origLastStatus = &laststatus
+        set laststatus=2
+        set statusline+=%=%#Search#\ PASTE\ 
+        set paste
+        let g:ispastetoggle = 1
+    else
+        let &laststatus=g:origLastStatus
+        let &statusline=substitute(&statusline, "%=%#Search# PASTE $", "", "g")
+        set nopaste
+        let g:ispastetoggle = 0
+    endif
+endfunc
+map <silent> ,p :call TogglePaste()<CR>
+
+" line number toggle
+map ,n :set nu!\|:set nu?<CR>
+
+" relative line number toggle
+map ,N :set rnu!\|:set rnu?<CR>
+
+" list toggle (show whitespace)
+map ,l :set list!<CR>
+
+" ruler toggle
+nnoremap <C-r> :execute "set colorcolumn=" . (&colorcolumn == "" ? "81" : "")<CR>
+
+"  ______                    _   _     _             
+" |  ____|                  | | | |   (_)            
+" | |____   _____ _ __ _   _| |_| |__  _ _ __   __ _ 
+" |  __\ \ / / _ \ '__| | | | __| '_ \| | '_ \ / _` |
+" | |___\ V /  __/ |  | |_| | |_| | | | | | | | (_| |
+" |______\_/ \___|_|   \__, |\__|_| |_|_|_| |_|\__, |
+" |  ____| |            __/ |                   __/ |
+" | |__  | |___  ___   |___/                   |___/ 
+" |  __| | / __|/ _ \                                
+" | |____| \__ \  __/                                
+" |______|_|___/\___|                                
+
+" restore last cursor position in file
+au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
+
+" set indent to 2 for haskell files
+autocmd Filetype haskell setlocal ts=2 sw=2 expandtab
+
+" nicer vertical split characters
+set fillchars=vert:\▏
+hi VertSplit guibg=NONE ctermbg=NONE
+
+" ]j and [j to move up and down quickfix list
+nnoremap ]j :cn<CR>
+nnoremap [j :cp<CR>
+" (]g [g for location list, setup with coc)

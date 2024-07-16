@@ -1,0 +1,19 @@
+// Place your key bindings in this file to override the defaults
+[
+    { "key": "ctrl+b h", "command": "workbench.action.navigateLeft" },
+    { "key": "ctrl+b l", "command": "workbench.action.navigateRight" },
+    { "key": "ctrl+b k", "command": "workbench.action.navigateUp" },
+    { "key": "ctrl+b j", "command": "workbench.action.navigateDown" },
+    { "key": "ctrl+b shift+\\", "command": "workbench.action.splitEditor" },
+    { "key": "ctrl+b -", "command": "workbench.action.splitEditorOrthogonal" },
+    { "key": "ctrl+j", "command": "goToNextReferenceFromEmbeddedEditor",       "when": "inReferenceSearchEditor"  },
+    { "key": "ctrl+k", "command": "goToPreviousReferenceFromEmbeddedEditor",   "when": "inReferenceSearchEditor"  },
+    { "key": "ctrl+j", "command": "search.action.focusNextSearchResult",       "when": "hasSearchResult"          },
+    { "key": "ctrl+k", "command": "search.action.focusPreviousSearchResult",   "when": "hasSearchResult"          },
+    { "key": "ctrl+j", "command": "goToNextReference",                         "when": "referenceSearchVisible"   },
+    { "key": "ctrl+k", "command": "goToPreviousReference",                     "when": "referenceSearchVisible"   },
+    { "key": "ctrl+j", "command": "references-view.next", "when": "reference-list.hasResult" },
+    { "key": "ctrl+k", "command": "references-view.prev", "when": "reference-list.hasResult"
+    },
+    { "key": "ctrl+\\", "command": "editor.action.commentLine" },
+]
