@@ -142,6 +142,7 @@ require('lazy').setup({
 
   -- "<c-\>" to comment visual regions/lines
   'numToStr/Comment.nvim',
+  -- nvim 0.10 will have this default
 
   -- fuzzy finder
   {
@@ -164,8 +165,65 @@ require('lazy').setup({
 
   -- fuzzy finder
   'ggandor/leap.nvim',
+
+  -- {
+  --   "jackMort/ChatGPT.nvim",
+  --   dependencies = {
+  --     "MunifTanjim/nui.nvim",
+  --     "nvim-lua/plenary.nvim",
+  --     "nvim-telescope/telescope.nvim"
+  --   }
+  -- }
+
+  {
+    "robitx/gp.nvim",
+    config = function()
+
+      local system_prompt = "You are a AI assisting a programmer. Be succint."
+      local conf = {
+        providers = {
+          openai = {
+            endpoint = "https://api.openai.com/v1/chat/completions",
+            secret = { "cat", "/Users/alvin/.openAIKey" },
+          },
+        },
+        agents = {
+          {
+            provider = "openai", name = "ChatGPT4o", chat = true, command = true,
+            model = { model = "gpt-4o", temperature = 0.8, top_p = 1 },
+            system_prompt = system_prompt
+          },
+          {
+            provider = "openai", name = "CodeGPT4o", chat = true, command = true,
+            model = { model = "gpt-4o", temperature = 0.8, top_p = 1 },
+            system_prompt = system_prompt
+          },
+        },
+        chat_user_prefix = "Prompt:",
+        chat_assistant_prefix = { "ChatGPT: ", "[{{agent}}]" },
+        chat_template = require("gp.defaults").short_chat_template,
+        chat_confirm_delete = false,
+        hooks = {
+          Explain = function(gp, params)
+            local template = "I have the following code from {{filename}}:\n\n"
+              .. "```{{filetype}}\n{{selection}}\n```\n\n"
+              .. "Please respond by explaining the code above."
+            local agent = gp.get_chat_agent()
+            gp.Prompt(params, gp.Target.popup, agent, template)
+          end,
+        }
+      }
+      require("gp").setup(conf)
+    end,
+  }
 })
 
+vim.keymap.set({"n", "i"}, "<C-g>c", "<cmd>GpChatNew<cr>")
+vim.keymap.set("v", "<C-g>c", ":<C-u>'<,'>GpChatNew<cr>")
+vim.keymap.set({"n", "i"}, "<C-g>f", "<cmd>GpChatFinder<cr>")
+vim.keymap.set("v", "<C-g>e", ":<C-u>'<,'>GpExplain<cr>")
+
+-- easy commenting 
 require('Comment').setup {
   opleader = {
     line = '<C-\\>',
@@ -174,7 +232,6 @@ require('Comment').setup {
     line = '<C-\\>',
   },
 }
-
 
 -- tmux navigator bindings
 vim.keymap.set('n', '<C-b>h', ':TmuxNavigateLeft<cr>', {silent = true})
@@ -202,13 +259,17 @@ vim.keymap.set('n', '<C-n>', ':NvimTreeToggle<CR>')
 -- lsp configuration
 local lspconfig = require('lspconfig')
 -- setup up lsps + extra capabilities for completion
+-- to add new lsp: see https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md
+--                 and https://github.com/williamboman/mason-lspconfig.nvim/blob/main/doc/server-mapping.md
 local capabilities = require("cmp_nvim_lsp").default_capabilities()
 local servers = {
+  'jdtls',
   'clangd',
   'pyright',
   'tsserver',
   'ocamllsp',
-  'rust_analyzer'
+  'rust_analyzer',
+  -- pylsp (used for pylint, setup is below)
 }
 for _, lsp in ipairs(servers) do
   lspconfig[lsp].setup {
@@ -500,7 +561,8 @@ vim.keymap.set('n', 'gr', require('telescope.builtin').lsp_references, { desc = 
 vim.keymap.set('n', '<c-r>', require('telescope.builtin').resume, { desc = 'Telescope: Resume Search' })
 vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { desc = 'Telescope: Search Diagnostics' })
 vim.keymap.set('n', '<leader>sw', require('telescope.builtin').grep_string, { desc = 'Telescope: Fuzzy search current file' })
-vim.keymap.set('n', '<leader>ss', require('telescope.builtin').lsp_document_symbols, { desc = 'Telescope: Search Symbols' })
+vim.keymap.set('n', '<leader>S', require('telescope.builtin').lsp_document_symbols, { desc = 'Telescope: Search Symbols in file' })
+vim.keymap.set('n', '<leader>ss', require('telescope.builtin').lsp_dynamic_workspace_symbols, { desc = 'Telescope: Search Symbols in workspace' })
 vim.keymap.set('n', '<c-f>', require('telescope').extensions.togglescope.find_files, { desc = 'Telescope: Find files' })
 vim.keymap.set('n', '<leader>f', require('telescope').extensions.togglescope.live_grep, { desc = 'Telescope: Search string in Workspace' })
 vim.keymap.set('n', '<leader><space>', require('telescope.builtin').buffers, { desc = 'Telescope: View open buffers' })
@@ -546,6 +608,7 @@ end
 vim.api.nvim_create_user_command('FindInGitRoot', telescope_find_in_git_root, {})
 
 -- leap
+-- keybindings: s and S
 require('leap').create_default_mappings()
 
 --  _______                _
