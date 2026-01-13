@@ -673,3 +673,66 @@ map ,l :set list!<CR>
 vim.cmd([[
 nnoremap <C-r> :execute "set colorcolumn=" . (&colorcolumn == "" ? "81" : "")<CR>
 ]])
+
+
+------------------ 
+
+local function preview_location_telescope()
+    local line = vim.api.nvim_get_current_line()
+    
+    -- Remove any leading status markers like [OK], [VULN], etc.
+    local cleaned = line:gsub("^%s*%[[^%]]*%]%s*", "")
+    
+    -- Now match file:line:rest
+    -- This handles paths with spaces, dots, slashes, etc.
+    local file, lnum, text = cleaned:match("^([^:]+):(%d+):(.*)")
+    
+    if not file or not lnum then
+        vim.notify("No file:line found on current line", vim.log.levels.WARN)
+        vim.notify("Line content: " .. line, vim.log.levels.DEBUG)
+        return
+    end
+    
+    -- Trim any whitespace
+    file = vim.trim(file)
+    
+    -- Remove leading ./ if present
+    file = file:gsub("^%./", "")
+    
+    -- Convert to absolute path
+    if not vim.startswith(file, "/") then
+        file = vim.fn.getcwd() .. "/" .. file
+    end
+    
+    -- Normalize path (resolve .., ., etc)
+    file = vim.fn.fnamemodify(file, ":p")
+    
+    -- Debug output
+    print("Resolved file path: " .. file)
+    
+    -- Check file exists
+    if vim.fn.filereadable(file) == 0 then
+        vim.notify("File not found: " .. file, vim.log.levels.ERROR)
+        -- Try to find it relative to current buffer's directory
+        local bufdir = vim.fn.expand('%:p:h')
+        local alt_file = bufdir .. "/" .. vim.fn.fnamemodify(file, ":t")
+        if vim.fn.filereadable(alt_file) == 1 then
+            file = alt_file
+            vim.notify("Found at: " .. file, vim.log.levels.INFO)
+        else
+            return
+        end
+    end
+    
+    -- Create single-entry quickfix and open telescope
+    vim.fn.setqflist({{
+        filename = file,
+        lnum = tonumber(lnum),
+        col = 1,
+        text = vim.trim(text or ""),
+    }})
+    
+    require('telescope.builtin').quickfix()
+end
+
+vim.keymap.set('n', 'gl', preview_location_telescope, { desc = 'Preview location in Telescope' })
