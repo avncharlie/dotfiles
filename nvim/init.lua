@@ -165,16 +165,6 @@ require('lazy').setup({
 
   -- fuzzy finder
   'ggandor/leap.nvim',
-
-  -- {
-  --   "jackMort/ChatGPT.nvim",
-  --   dependencies = {
-  --     "MunifTanjim/nui.nvim",
-  --     "nvim-lua/plenary.nvim",
-  --     "nvim-telescope/telescope.nvim"
-  --   }
-  -- }
-
   {
     "robitx/gp.nvim",
     config = function()
@@ -188,16 +178,19 @@ require('lazy').setup({
           },
         },
         agents = {
+          { name = "ChatGPT-o3-mini", disable = true },
+          -- { name = "ChatGPT4o", disable = true },
           {
-            provider = "openai", name = "ChatGPT4o", chat = true, command = true,
-            model = { model = "gpt-4o", temperature = 0.8, top_p = 1 },
+            name = "ChatGPT4o", chat = true, command = true,
+            model = { model = "gpt-4" },
             system_prompt = system_prompt
           },
-          {
-            provider = "openai", name = "CodeGPT4o", chat = true, command = true,
-            model = { model = "gpt-4o", temperature = 0.8, top_p = 1 },
-            system_prompt = system_prompt
-          },
+          { name = "ChatGPT4o-mini", disable = true },
+          -- {
+          --   name = "ChatGPT5", chat = true, command = true,
+          --   model = { model = "gpt-5" },
+          --   system_prompt = system_prompt
+          -- },
         },
         chat_user_prefix = "Prompt:",
         chat_assistant_prefix = { "ChatGPT: ", "[{{agent}}]" },
@@ -266,40 +259,48 @@ local servers = {
   'jdtls',
   'clangd',
   'pyright',
-  'tsserver',
+  -- 'ts_ls', -- if you switch from tsserver to the new ts_ls
+  -- 'asm_lsp',
   'ocamllsp',
   'rust_analyzer',
-  -- pylsp (used for pylint, setup is below)
 }
-for _, lsp in ipairs(servers) do
-  lspconfig[lsp].setup {
+
+for _, name in ipairs(servers) do
+  -- register/augment config
+  vim.lsp.config(name, {
     capabilities = capabilities,
-  }
+    -- on_attach = function(client, bufnr) ... end,  -- if you want per-server hooks
+    -- cmd = {...}, root_dir = function() ... end,   -- only if you need to override defaults
+  })
+  -- start/enable it (auto-starts on matching buffers)
+  vim.lsp.enable(name)
 end
+
+
 -- special setup for pylsp. only used for pylint. there really should be a way
 -- to plug in pylint directly instead of through pylsp
-lspconfig.pylsp.setup {
-  enable = true,
-  -- disable several capabilities in favor of pyright
-  -- specifically the hover messes with pyright's hover
-  -- but only using pylint for python docstring linting so the other
-  -- capabilities aren't needed either.
-  on_attach = function (client, buffer)
-      client.server_capabilities.documentFormattingProvider = false
-      client.server_capabilities.hoverProvider = false
-      client.server_capabilities.renameProvider = false
-  end,
-  settings = {
-  pylsp = {
-    plugins = {
-      pyflakes = { enabled = false },
-      pycodestyle = { enabled = false },
-      mccabe = { enabled = false },
-      pylint = { enabled = true },
-      },
-    },
-  },
-}
+-- lspconfig.pylsp.setup {
+--   enable = false,
+--   -- disable several capabilities in favor of pyright
+--   -- specifically the hover messes with pyright's hover
+--   -- but only using pylint for python docstring linting so the other
+--   -- capabilities aren't needed either.
+--   on_attach = function (client, buffer)
+--       client.server_capabilities.documentFormattingProvider = false
+--       client.server_capabilities.hoverProvider = false
+--       client.server_capabilities.renameProvider = false
+--   end,
+--   settings = {
+--   pylsp = {
+--     plugins = {
+--       pyflakes = { enabled = false },
+--       pycodestyle = { enabled = false },
+--       mccabe = { enabled = false },
+--       pylint = { enabled = true },
+--       },
+--     },
+--   },
+-- }
 
 -- diagnostics
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous diagnostic message' })
@@ -609,6 +610,7 @@ vim.api.nvim_create_user_command('FindInGitRoot', telescope_find_in_git_root, {}
 
 -- leap
 -- keybindings: s and S
+vim.keymap.del('x', 'S')  -- visual mode
 require('leap').create_default_mappings()
 
 --  _______                _
