@@ -60,6 +60,8 @@ augroup remember_folds
   au BufWinEnter ?* execute 'normal! zX' | silent! loadview 1
 augroup END
 ]])
+-- run rm -rf ~/.local/state/nvim/view/ to clear old views with wrong directories baked in
+vim.opt.viewoptions:remove("curdir")
 
 --  _____  _             _
 -- |  __ \| |           (_)
