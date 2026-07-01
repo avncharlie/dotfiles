@@ -74,7 +74,7 @@ vim.opt.viewoptions:remove("curdir")
 
 -- use lazy.nvim as package manager
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.loop.fs_stat(lazypath) then
+if not vim.uv.fs_stat(lazypath) then
   vim.fn.system({
     "git",
     "clone",
@@ -108,19 +108,91 @@ require('lazy').setup({
   { 'stevearc/dressing.nvim', opts = {}, },
 
   -- completion
-  'hrsh7th/cmp-cmdline',
-  'hrsh7th/cmp-path',
-  'hrsh7th/nvim-cmp',
-  'hrsh7th/cmp-nvim-lsp',
-  'saadparwaiz1/cmp_luasnip',
-  'L3MON4D3/LuaSnip',
-  'hrsh7th/cmp-buffer',
-  -- lsp-integrated completion menu
-  'onsails/lspkind.nvim',
+  {
+    'saghen/blink.cmp',
+    version = '1.*',
+    build = function() require('blink.cmp').build():pwait() end,
+    opts = {
+      keymap = {
+        preset = 'enter',
+        ['<Tab>'] = { 'snippet_forward', 'select_next', 'fallback' },
+        ['<S-Tab>'] = { 'snippet_backward', 'select_prev', 'fallback' },
+      },
+      sources = { default = { 'lsp', 'path', 'snippets', 'buffer' } },
+      snippets = { preset = 'default' },
+      completion = {
+        list = {
+          selection = {
+            preselect = false,
+            auto_insert = true,
+          },
+        },
+        documentation = { auto_show = true, auto_show_delay_ms = 200 },
+        menu = {
+          draw = {
+            columns = { { 'kind_icon' }, { 'label', gap = 1 } },
+            components = {
+              label = {
+                text = function(ctx)
+                  return require('colorful-menu').blink_components_text(ctx)
+                end,
+                highlight = function(ctx)
+                  return require('colorful-menu').blink_components_highlight(ctx)
+                end,
+              },
+            },
+          },
+        },
+      },
+      cmdline = {
+        enabled = true,
+        keymap = { preset = 'cmdline' },
+      },
+    },
+  },
 
-  -- treesitter
-  { 'nvim-treesitter/nvim-treesitter', build = ':TSUpdate', },
-  'nvim-treesitter/nvim-treesitter-textobjects',
+  -- colorful completion menu (treesitter-highlighted labels)
+  {
+    'xzbdmw/colorful-menu.nvim',
+    config = function()
+      require('colorful-menu').setup {}
+    end,
+  },
+
+  -- treesitter (main branch: parser management only; highlighting via built-in)
+  {
+    'nvim-treesitter/nvim-treesitter',
+    branch = 'main',
+    build = ':TSUpdate',
+    init = function()
+      local ensure_installed = require('nvim-treesitter.config').get_available()
+      local already = require('nvim-treesitter.config').get_installed()
+      local to_install = vim.iter(ensure_installed)
+        :filter(function(p) return not vim.tbl_contains(already, p) end)
+        :totable()
+      if #to_install > 0 then
+        require('nvim-treesitter').install(to_install)
+      end
+    end,
+    config = function()
+      require('nvim-treesitter').setup()
+      vim.api.nvim_create_autocmd('FileType', {
+        group = vim.api.nvim_create_augroup('UserTreesitter', { clear = true }),
+        callback = function()
+          pcall(vim.treesitter.start)
+          vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+        end,
+      })
+    end,
+  },
+  {
+    'nvim-treesitter/nvim-treesitter-textobjects',
+    branch = 'main',
+    init = function()
+      vim.g.no_plugin_maps = true
+    end,
+    dependencies = { 'nvim-treesitter/nvim-treesitter' },
+  },
 
   -- onedark colorscheme
   {
@@ -149,7 +221,7 @@ require('lazy').setup({
   -- fuzzy finder
   {
     'nvim-telescope/telescope.nvim',
-    branch = '0.1.x',
+    branch = 'master',
     dependencies = {
       'nvim-lua/plenary.nvim',
       'Theo-Steiner/togglescope',
@@ -165,58 +237,17 @@ require('lazy').setup({
   -- show buffers in tabline
   'ap/vim-buftabline',
 
-  -- fuzzy finder
-  'ggandor/leap.nvim',
-  {
-    "robitx/gp.nvim",
-    config = function()
+  -- nice indent
+  'Vimjas/vim-python-pep8-indent',
 
-      local system_prompt = "You are a AI assisting a programmer. Be succint."
-      local conf = {
-        providers = {
-          openai = {
-            endpoint = "https://api.openai.com/v1/chat/completions",
-            secret = { "cat", "/Users/alvin/.openAIKey" },
-          },
-        },
-        agents = {
-          { name = "ChatGPT-o3-mini", disable = true },
-          -- { name = "ChatGPT4o", disable = true },
-          {
-            name = "ChatGPT4o", chat = true, command = true,
-            model = { model = "gpt-4" },
-            system_prompt = system_prompt
-          },
-          { name = "ChatGPT4o-mini", disable = true },
-          -- {
-          --   name = "ChatGPT5", chat = true, command = true,
-          --   model = { model = "gpt-5" },
-          --   system_prompt = system_prompt
-          -- },
-        },
-        chat_user_prefix = "Prompt:",
-        chat_assistant_prefix = { "ChatGPT: ", "[{{agent}}]" },
-        chat_template = require("gp.defaults").short_chat_template,
-        chat_confirm_delete = false,
-        hooks = {
-          Explain = function(gp, params)
-            local template = "I have the following code from {{filename}}:\n\n"
-              .. "```{{filetype}}\n{{selection}}\n```\n\n"
-              .. "Please respond by explaining the code above."
-            local agent = gp.get_chat_agent()
-            gp.Prompt(params, gp.Target.popup, agent, template)
-          end,
-        }
-      }
-      require("gp").setup(conf)
-    end,
-  }
+  -- fuzzy finder
+  { url = 'https://codeberg.org/andyg/leap.nvim' },
+
+  { 'lervag/vimtex' },
 })
 
-vim.keymap.set({"n", "i"}, "<C-g>c", "<cmd>GpChatNew<cr>")
-vim.keymap.set("v", "<C-g>c", ":<C-u>'<,'>GpChatNew<cr>")
-vim.keymap.set({"n", "i"}, "<C-g>f", "<cmd>GpChatFinder<cr>")
-vim.keymap.set("v", "<C-g>e", ":<C-u>'<,'>GpExplain<cr>")
+-- vimtex
+vim.g.vimtex_view_method='skim'
 
 -- easy commenting 
 require('Comment').setup {
@@ -252,17 +283,20 @@ require("nvim-tree").setup()
 vim.keymap.set('n', '<C-n>', ':NvimTreeToggle<CR>')
 
 -- lsp configuration
-local lspconfig = require('lspconfig')
 -- setup up lsps + extra capabilities for completion
 -- to add new lsp: see https://github.com/neovim/nvim-lspconfig/blob/master/doc/server_configurations.md
 --                 and https://github.com/williamboman/mason-lspconfig.nvim/blob/main/doc/server-mapping.md
-local capabilities = require("cmp_nvim_lsp").default_capabilities()
+-- lsp configuration (Neovim 0.11+)
+local capabilities = require('blink.cmp').get_lsp_capabilities()
+
 local servers = {
   'jdtls',
   'clangd',
   'pyright',
-  -- 'ts_ls', -- if you switch from tsserver to the new ts_ls
+  'ts_ls', -- if you switch from tsserver to the new ts_ls
   -- 'asm_lsp',
+  'cssls',
+  'cssmodules_ls',
   'ocamllsp',
   'rust_analyzer',
 }
@@ -278,35 +312,9 @@ for _, name in ipairs(servers) do
   vim.lsp.enable(name)
 end
 
-
--- special setup for pylsp. only used for pylint. there really should be a way
--- to plug in pylint directly instead of through pylsp
--- lspconfig.pylsp.setup {
---   enable = false,
---   -- disable several capabilities in favor of pyright
---   -- specifically the hover messes with pyright's hover
---   -- but only using pylint for python docstring linting so the other
---   -- capabilities aren't needed either.
---   on_attach = function (client, buffer)
---       client.server_capabilities.documentFormattingProvider = false
---       client.server_capabilities.hoverProvider = false
---       client.server_capabilities.renameProvider = false
---   end,
---   settings = {
---   pylsp = {
---     plugins = {
---       pyflakes = { enabled = false },
---       pycodestyle = { enabled = false },
---       mccabe = { enabled = false },
---       pylint = { enabled = true },
---       },
---     },
---   },
--- }
-
 -- diagnostics
-vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous diagnostic message' })
-vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next diagnostic message' })
+vim.keymap.set('n', '[d', function() vim.diagnostic.jump({count=-1, float=true}) end, { desc = 'Go to previous diagnostic message' })
+vim.keymap.set('n', ']d', function() vim.diagnostic.jump({count=1, float=true}) end, { desc = 'Go to next diagnostic message' })
 vim.keymap.set('n', '<c-x>', vim.diagnostic.open_float, { desc = 'Open floating diagnostic message' })
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setqflist, { desc = 'Open diagnostics list' })
 -- keymaps
@@ -360,158 +368,60 @@ vim.api.nvim_create_autocmd('LspAttach', {
  end, 
 })
 
--- completion config
-vim.opt.completeopt = {'menu', 'menuone', 'noselect'}
-local cmp = require 'cmp'
-local luasnip = require 'luasnip'
-local lspkind = require('lspkind')
-cmp.setup {
-  snippet = {
-    expand = function(args)
-      luasnip.lsp_expand(args.body)
-    end,
-  },
-  mapping = cmp.mapping.preset.insert({
-    ['<C-u>'] = cmp.mapping.scroll_docs(-4), -- Up
-    ['<C-d>'] = cmp.mapping.scroll_docs(4), -- Down
-    -- C-b (back) C-f (forward) for snippet placeholder navigation.
-    ['<C-Space>'] = cmp.mapping.complete(),
-    ['<CR>'] = cmp.mapping.confirm {
-      behavior = cmp.ConfirmBehavior.Replace,
-      select = true,
-    },
-    ['<Tab>'] = cmp.mapping(function(fallback)
-      if cmp.visible() then
-        cmp.select_next_item()
-      elseif luasnip.expand_or_jumpable() then
-        luasnip.expand_or_jump()
-      else
-        fallback()
-      end
-    end, { 'i', 's' }),
-    ['<S-Tab>'] = cmp.mapping(function(fallback)
-      if cmp.visible() then
-        cmp.select_prev_item()
-      elseif luasnip.jumpable(-1) then
-        luasnip.jump(-1)
-      else
-        fallback()
-      end
-    end, { 'i', 's' }),
-  }),
-  formatting = {
-    format = lspkind.cmp_format(),
-  },
-  sources = {
-    { name = 'nvim_lsp' },
-    { name = 'luasnip' },
-    { name = 'path' },
-    { name = 'buffer' }
-  },
+-- treesitter textobjects config (main branch: explicit keymaps)
+local tto = require('nvim-treesitter-textobjects')
+tto.setup {
+  select = { lookahead = true },
+  move = { set_jumps = true },
 }
--- completion for searching '/' and commands ':'
-cmp.setup.cmdline('/', {
-  mapping = cmp.mapping.preset.cmdline(),
-  sources = {
-    { name = 'buffer' }
-  }
-})
-cmp.setup.cmdline(':', {
-  mapping = cmp.mapping.preset.cmdline(),
-  sources = cmp.config.sources({
-    { name = 'path' }
-  }, {
-    {
-      name = 'cmdline',
-      option = {
-        ignore_cmds = { 'Man', '!' }
-      },
-      keyword_length = 2
-    }
-  })
-})
+local tto_select = require('nvim-treesitter-textobjects.select')
+local tto_move = require('nvim-treesitter-textobjects.move')
+local tto_swap = require('nvim-treesitter-textobjects.swap')
 
--- treesitter config
-require'nvim-treesitter.configs'.setup {
-  ensure_installed = "all",
-  auto_install = true,
-  highlight = {
-    enable = true,
-  },
-  -- smart select
-  incremental_selection = {
-    enable = true,
-    keymaps = {
-      init_selection = '<cr>',
-      node_incremental = '<cr>',
-      scope_incremental = '<c-space>',
-      node_decremental = '<tab>',
-    },
-  },
-  textobjects = {
-    select = {
-      enable = true,
-      lookahead = true, -- Automatically jump forward to textobj, similar to targets.vim
-      keymaps = {
-        -- You can use the capture groups defined in textobjects.scm
-        ['aa'] = '@parameter.outer',
-        ['ia'] = '@parameter.inner',
-        ['af'] = '@function.outer',
-        ['if'] = '@function.inner',
-        ['ac'] = '@class.outer',
-        ['ic'] = '@class.inner',
-      },
-    },
-    move = {
-      enable = true,
-      set_jumps = true, -- whether to set jumps in the jumplist
-      goto_next_start = {
-        [']]'] = '@function.outer',
-        [']c'] = '@class.outer',
-      },
-      goto_next_end = {
-        [']M'] = '@function.outer',
-        [']C'] = '@class.outer',
-      },
-      goto_previous_start = {
-        ['[['] = '@function.outer',
-        ['[c'] = '@class.outer',
-      },
-      goto_previous_end = {
-        ['[M'] = '@function.outer',
-        ['[C'] = '@class.outer',
-      },
-      goto_next = {
-        ["]i"] = "@conditional.outer",
-      },
-      goto_previous = {
-        ["[i"] = "@conditional.outer",
-      }
-    },
-    swap = {
-      enable = true,
-      swap_next = {
-        ['<leader>a'] = '@parameter.inner',
-      },
-      swap_previous = {
-        ['<leader>A'] = '@parameter.inner',
-      },
-    },
-  },
-}
--- folding with treesitter
+-- select textobjects
+for _, lhs in ipairs({ 'aa', 'ia', 'af', 'if', 'ac', 'ic' }) do
+  local capture = ({
+    aa = '@parameter.outer', ia = '@parameter.inner',
+    af = '@function.outer',  ['if'] = '@function.inner',
+    ac = '@class.outer',     ic = '@class.inner',
+  })[lhs]
+  vim.keymap.set({ 'x', 'o' }, lhs, function()
+    tto_select.select_textobject(capture, 'textobjects')
+  end)
+end
+
+-- move textobjects
+vim.keymap.set({ 'n', 'x', 'o' }, ']]', function() tto_move.goto_next_start('@function.outer', 'textobjects') end)
+vim.keymap.set({ 'n', 'x', 'o' }, ']c', function() tto_move.goto_next_start('@class.outer', 'textobjects') end)
+vim.keymap.set({ 'n', 'x', 'o' }, ']M', function() tto_move.goto_next_end('@function.outer', 'textobjects') end)
+vim.keymap.set({ 'n', 'x', 'o' }, ']C', function() tto_move.goto_next_end('@class.outer', 'textobjects') end)
+vim.keymap.set({ 'n', 'x', 'o' }, '[[', function() tto_move.goto_previous_start('@function.outer', 'textobjects') end)
+vim.keymap.set({ 'n', 'x', 'o' }, '[c', function() tto_move.goto_previous_start('@class.outer', 'textobjects') end)
+vim.keymap.set({ 'n', 'x', 'o' }, '[M', function() tto_move.goto_previous_end('@function.outer', 'textobjects') end)
+vim.keymap.set({ 'n', 'x', 'o' }, '[C', function() tto_move.goto_previous_end('@class.outer', 'textobjects') end)
+vim.keymap.set({ 'n', 'x', 'o' }, ']i', function() tto_move.goto_next('@conditional.outer', 'textobjects') end)
+vim.keymap.set({ 'n', 'x', 'o' }, '[i', function() tto_move.goto_previous('@conditional.outer', 'textobjects') end)
+
+-- swap textobjects
+vim.keymap.set('n', '<leader>a', function() tto_swap.swap_next('@parameter.inner') end)
+vim.keymap.set('n', '<leader>A', function() tto_swap.swap_previous('@parameter.inner') end)
+
+-- folding with treesitter (built-in foldexpr)
 vim.opt.foldmethod = "expr"
-vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
+vim.opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
 vim.opt.foldlevel = 99
 
 -- telescope settings
 require('telescope').setup {
   defaults = {
+    history = { limit = 100, cycle_wrap = true },
     file_ignore_patterns = { "^.git/" },
     mappings = {
       i = {
         ['<C-n>'] = false,
         ['<C-p>'] = false,
+        ['<Up>']   = require('telescope.actions').cycle_history_prev,
+        ['<Down>'] = require('telescope.actions').cycle_history_next,
         ['<C-j>'] = {
           require('telescope.actions').move_selection_next, type = "action",
           opts = { nowait = true, silent = true },
@@ -611,9 +521,11 @@ end
 vim.api.nvim_create_user_command('FindInGitRoot', telescope_find_in_git_root, {})
 
 -- leap
--- keybindings: s and S
+-- keybindings: s and S (Sneak-style)
 vim.keymap.del('x', 'S')  -- visual mode
-require('leap').create_default_mappings()
+vim.keymap.set({'n', 'x', 'o'}, 's',  '<Plug>(leap-forward)')
+vim.keymap.set({'n', 'x', 'o'}, 'S',  '<Plug>(leap-backward)')
+vim.keymap.set('n',             'gs', '<Plug>(leap-from-window)')
 
 --  _______                _
 -- |__   __|              | |
@@ -740,3 +652,11 @@ local function preview_location_telescope()
 end
 
 vim.keymap.set('n', 'gl', preview_location_telescope, { desc = 'Preview location in Telescope' })
+
+-- vim.api.nvim_create_autocmd("DirChanged", {
+--   callback = function(args)
+--     vim.notify("CWD changed to: " .. vim.fn.getcwd() .. "\nTriggered by: " .. vim.inspect(args), vim.log.levels.WARN)
+--     -- Print stack trace to find the culprit
+--     print(debug.traceback())
+--   end,
+-- })

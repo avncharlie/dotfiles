@@ -1,0 +1,40 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "lsp": {
+    "pyright": {
+      "command": ["pyright-langserver", "--stdio"],
+      "extensions": [".py"]
+    },
+    "clangd": {
+      "command": ["clangd", "--background-index", "--clang-tidy", "--header-insertion=iwyu"],
+      "extensions": [".c", ".cpp", ".h", ".hpp", ".cc", ".cxx"]
+    }
+  },
+  "tools": {
+    "websearch": true
+  },
+  "provider": {
+    "openrouter": {
+      "models": {
+        "z-ai/glm-5.2": {
+          "options": {
+            "provider": {
+              "order": ["fireworks", "together"],
+              "data_collection": "deny",
+              "require_parameters": true
+            }
+          }
+        },
+        "moonshotai/kimi-k2.7-code": {
+          "options": {
+            "provider": {
+              "order": ["fireworks", "together"],
+              "data_collection": "deny",
+              "require_parameters": true
+            }
+          }
+        }
+      }
+    }
+  }
+}
