@@ -52,26 +52,6 @@ vim.keymap.set('n', "[q", ':cp<CR>', { desc = 'Go to previous quickfix' })
 -- decrease update time
 vim.o.updatetime = 250
 vim.o.timeoutlen = 300
--- remember folds
-vim.cmd([[
-augroup remember_folds
-  autocmd!
-  au BufWinLeave ?* mkview 1
-  au BufWinEnter ?* execute 'normal! zX' | silent! loadview 1
-augroup END
-]])
--- run rm -rf ~/.local/state/nvim/view/ to clear old views with wrong directories baked in
-vim.opt.viewoptions:remove("curdir")
-
---  _____  _             _
--- |  __ \| |           (_)
--- | |__) | |_   _  __ _ _ _ __  ___
--- |  ___/| | | | |/ _` | | '_ \/ __|
--- | |    | | |_| | (_| | | | | \__ \
--- |_|    |_|\__,_|\__, |_|_| |_|___/
---                  __/ |
---                 |___/
-
 -- use lazy.nvim as package manager
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.uv.fs_stat(lazypath) then
@@ -112,13 +92,42 @@ require('lazy').setup({
     'saghen/blink.cmp',
     version = '1.*',
     build = function() require('blink.cmp').build():pwait() end,
+    dependencies = { { 'saghen/blink.compat', opts = {} } },
     opts = {
       keymap = {
         preset = 'enter',
         ['<Tab>'] = { 'snippet_forward', 'select_next', 'fallback' },
         ['<S-Tab>'] = { 'snippet_backward', 'select_prev', 'fallback' },
       },
-      sources = { default = { 'lsp', 'path', 'snippets', 'buffer' } },
+      sources = {
+        default = { 'lsp', 'path', 'snippets', 'buffer', 'avante_commands', 'avante_mentions', 'avante_shortcuts', 'avante_files' },
+        providers = {
+          avante_commands = {
+            name = 'avante_commands',
+            module = 'blink.compat.source',
+            score_offset = 90,
+            opts = {},
+          },
+          avante_files = {
+            name = 'avante_files',
+            module = 'blink.compat.source',
+            score_offset = 100,
+            opts = {},
+          },
+          avante_mentions = {
+            name = 'avante_mentions',
+            module = 'blink.compat.source',
+            score_offset = 1000,
+            opts = {},
+          },
+          avante_shortcuts = {
+            name = 'avante_shortcuts',
+            module = 'blink.compat.source',
+            score_offset = 1000,
+            opts = {},
+          },
+        },
+      },
       snippets = { preset = 'default' },
       completion = {
         list = {
@@ -244,7 +253,75 @@ require('lazy').setup({
   { url = 'https://codeberg.org/andyg/leap.nvim' },
 
   { 'lervag/vimtex' },
+
+  {
+    "yetone/avante.nvim",
+    -- if you want to build from source then do `make BUILD_FROM_SOURCE=true`
+    -- ⚠️ must add this setting! ! !
+    build = vim.fn.has("win32") ~= 0
+        and "powershell -ExecutionPolicy Bypass -File Build.ps1 -BuildFromSource false"
+        or "make",
+    event = "VeryLazy",
+    version = false, -- Never set this value to "*"! Never!
+    ---@module 'avante'
+    ---@type avante.Config
+    opts = {
+      provider = "openrouter",
+      behaviour = {
+        auto_apply_diff_after_generation = false, -- Prevents applying changes instantly
+        auto_approve_tool_permissions = false,    -- Stops agentic mode from auto-approving
+      },
+      selection = {
+        hint_display = "none",
+      },
+      selector = { provider = "telescope" },
+      providers = {
+        openrouter = {
+          __inherited_from = "openai",
+          endpoint = "https://openrouter.ai/api/v1",
+          model = "z-ai/glm-5.2",
+          api_key_name = "cmd:cat ~/.openrouter_key",
+        },
+      },
+    },
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "MunifTanjim/nui.nvim",
+      --- The below dependencies are optional,
+      "nvim-telescope/telescope.nvim", -- for file_selector provider telescope
+      "stevearc/dressing.nvim", -- for input provider dressing
+      "nvim-tree/nvim-web-devicons", -- or echasnovski/mini.icons
+      {
+        -- support for image pasting
+        "HakonHarnes/img-clip.nvim",
+        event = "VeryLazy",
+        opts = {
+          -- recommended settings
+          default = {
+            embed_image_as_base64 = false,
+            prompt_for_file_name = false,
+            drag_and_drop = {
+              insert_mode = true,
+            },
+            -- required for Windows users
+            use_absolute_path = true,
+          },
+        },
+      },
+      {
+        'MeanderingProgrammer/render-markdown.nvim',
+        opts = {
+          file_types = { "Avante" },
+        },
+        ft = { "Avante" },
+      },
+    },
+  },
+
 })
+
+-- C-h to open Avante history
+vim.keymap.set('n', '<C-H>', ':AvanteHistory<CR>', {silent = true})
 
 -- vimtex
 vim.g.vimtex_view_method='skim'

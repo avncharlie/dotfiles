@@ -1,5 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "plugin": ["btw-opencode"],
   "lsp": {
     "pyright": {
       "command": ["pyright-langserver", "--stdio"],
@@ -17,22 +18,13 @@
     "openrouter": {
       "models": {
         "z-ai/glm-5.2": {
-          "options": {
-            "provider": {
-              "order": ["fireworks", "together"],
-              "data_collection": "deny",
-              "require_parameters": true
-            }
-          }
+          "options": { "provider": { "quantizations": ["fp8"], "data_collection": "deny", "require_parameters": true } }
         },
         "moonshotai/kimi-k2.7-code": {
-          "options": {
-            "provider": {
-              "order": ["fireworks", "together"],
-              "data_collection": "deny",
-              "require_parameters": true
-            }
-          }
+          "options": { "provider": { "quantizations": ["int4"], "data_collection": "deny", "require_parameters": true } }
+        },
+        "deepseek/deepseek-v4-pro": {
+          "options": { "provider": { "only": ["deepseek"] } }
         }
       }
     }

@@ -1,0 +1,171 @@
+# p10k instant prompt — must stay at the very top of the file.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# --- antidote (plugin manager) ---
+source "$HOME/.antidote/antidote.zsh"
+antidote load "$HOME/.zsh_plugins.txt"
+
+# --- vi mode + key timeout ---
+set -o vi
+export KEYTIMEOUT=1
+
+# --- history ---
+setopt HIST_EXPIRE_DUPS_FIRST
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_FIND_NO_DUPS
+setopt HIST_SAVE_NO_DUPS
+setopt INC_APPEND_HISTORY
+export HISTFILESIZE=1000000000
+export HISTSIZE=1000000000
+
+# --- PATH exports  ---
+typeset -U path
+path=(
+  /Users/alvin/.opencode/bin
+  /Users/alvin/.bun/bin
+  /Users/alvin/bin
+  /Users/alvin/bin/jdt-language-server-1.37.0-202406271335/bin
+  /Users/alvin/.local/bin
+  /Users/alvin/Documents/Remarkable/rm-uploader/.venv/bin
+  /Users/alvin/.antigravity/antigravity/bin
+  $path
+)
+export BUN_INSTALL="$HOME/.bun"
+
+# --- editor ---
+export EDITOR=nvim
+
+# --- opencode ---
+export OPENCODE_ENABLE_EXA=1
+export OPENCODE_EXPERIMENTAL_LSP_TOOL=true
+
+# --- aliases ---
+alias home="tmux new-session -A -s home"
+alias ii="open ."
+alias vim="nvim"
+alias vimdiff="nvim -d"
+alias compiledb="/Users/alvin/.virtualenvs/compiledb/bin/python /Users/alvin/.virtualenvs/compiledb/bin/compiledb"
+# alias opencode="bun run --cwd /Users/alvin/Documents/Tech/opencode/packages/opencode --conditions=browser src/index.ts"
+alias ls="ls -G"
+alias l="ls -lah -G"
+
+opencode() {
+  local project_dir="$PWD"
+
+  bun run \
+    --cwd /Users/alvin/Documents/Tech/opencode/packages/opencode \
+    --conditions=browser \
+    src/index.ts \
+    "$project_dir" \
+    "$@"
+}
+
+# .. 
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+
+# --- key bindings ---
+bindkey -v
+bindkey '^h' autosuggest-accept
+bindkey '^o' autosuggest-execute
+bindkey '^F' fzf-history-widget
+bindkey '^R' history-incremental-pattern-search-backward
+
+# --- completion: menu select with highlight + shift-tab reverse ---
+autoload -Uz compinit && compinit
+zmodload zsh/complist
+zstyle ':completion:*' menu select
+# Colorize the completion list like `ls` (dirs, executables, symlinks, etc.).
+export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;44'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+# Shift-Tab (back-tab) reverses through the menu. Use the terminfo entry so it
+# works regardless of which terminal sends ^[[Z vs another sequence. Bound in
+# both the main keymaps and the menuselect keymap.
+bindkey "$terminfo[kcbt]" reverse-menu-complete
+bindkey -M vicmd "$terminfo[kcbt]" reverse-menu-complete
+bindkey -M menuselect "$terminfo[kcbt]" reverse-menu-complete
+# Vi-style hjkl navigation inside the menu.
+bindkey -M menuselect 'h' vi-backward-char
+bindkey -M menuselect 'l' vi-forward-char
+bindkey -M menuselect 'k' vi-up-line-or-history
+bindkey -M menuselect 'j' vi-down-line-or-history
+
+# --- case-insensitive tab completion ---
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+
+# --- fzf (stable path across fzf versions) ---
+[[ -r "$(brew --prefix)/opt/fzf/shell/key-bindings.zsh" ]] && \
+  source "$(brew --prefix)/opt/fzf/shell/key-bindings.zsh"
+
+# --- autojump (brew) ---
+[[ -r "$(brew --prefix)/etc/profile.d/autojump.sh" ]] && \
+  source "$(brew --prefix)/etc/profile.d/autojump.sh"
+
+# --- bun completions ---
+[[ -s "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
+
+# --- opam ---
+[[ ! -r "$HOME/.opam/opam-init/init.zsh" ]] || \
+  source "$HOME/.opam/opam-init/init.zsh" > /dev/null 2>&1
+
+# --- virtualenvwrapper (lazy) ---
+export WORKON_HOME="$HOME/.virtualenvs"
+_vwrapper_lazy_load() {
+  unset -f workon mkvirtualenv rmvirtualenv mkproject cdvirtualenv cdproject 2>/dev/null
+  VIRTUALENVWRAPPER_PYTHON="/usr/bin/python3"
+  source /usr/local/bin/virtualenvwrapper.sh
+}
+workon()        { _vwrapper_lazy_load && workon "$@"; }
+mkvirtualenv()  { _vwrapper_lazy_load && mkvirtualenv "$@"; }
+rmvirtualenv()  { _vwrapper_lazy_load && rmvirtualenv "$@"; }
+mkproject()     { _vwrapper_lazy_load && mkproject "$@"; }
+cdvirtualenv()  { _vwrapper_lazy_load && cdvirtualenv "$@"; }
+cdproject()     { _vwrapper_lazy_load && cdproject "$@"; }
+
+# --- nvm (lazy) ---
+export NVM_DIR="$HOME/.nvm"
+_nvm_lazy_load() {
+  unset -f nvm node npm pnpm yarn npx corepack 2>/dev/null
+  [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
+  [[ -s "$NVM_DIR/bash_completion" ]] && source "$NVM_DIR/bash_completion"
+}
+nvm()     { _nvm_lazy_load && nvm "$@"; }
+node()    { _nvm_lazy_load && node "$@"; }
+npm()     { _nvm_lazy_load && npm "$@"; }
+pnpm()    { _nvm_lazy_load && pnpm "$@"; }
+yarn()    { _nvm_lazy_load && yarn "$@"; }
+npx()     { _nvm_lazy_load && npx "$@"; }
+corepack() { _nvm_lazy_load && corepack "$@"; }
+
+# --- temp directory helper ---
+function mtd() {
+  local target_dir="/tmp/"
+  local name=$1
+  if [ -z "$name" ]; then
+    name=$(openssl rand -hex 16)
+  fi
+  local dir_path="${target_dir}${name}"
+  local postfix=2
+  while [ -d "$dir_path" ]; do
+    name="${1}${postfix}"
+    dir_path="${target_dir}${name}"
+    ((postfix++))
+  done
+  mkdir "$dir_path"
+  cd "$dir_path"
+}
+
+# --- SDKMAN ---
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+
+# --- p10k config ---
+[[ -r "$HOME/.p10k.zsh" ]] && source "$HOME/.p10k.zsh"
+
+# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
