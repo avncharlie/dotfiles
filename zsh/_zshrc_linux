@@ -1,0 +1,132 @@
+# p10k instant prompt — must stay at the very top of the file.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# --- antidote (plugin manager) ---
+source "$HOME/.antidote/antidote.zsh"
+antidote load "$HOME/.zsh_plugins.txt"
+
+# --- vi mode + key timeout ---
+set -o vi
+export KEYTIMEOUT=1
+
+# --- history ---
+# Unlike macOS, Linux has no /etc/zshrc setting HISTFILE/SAVEHIST — without
+# these, history would not persist across sessions.
+HISTFILE="$HOME/.zsh_history"
+SAVEHIST=1000000000
+export HISTSIZE=1000000000
+setopt HIST_EXPIRE_DUPS_FIRST
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_FIND_NO_DUPS
+setopt HIST_SAVE_NO_DUPS
+setopt INC_APPEND_HISTORY
+
+# --- PATH exports  ---
+typeset -U path
+path=(
+  $HOME/.opencode/bin
+  $HOME/bin
+  $HOME/bin/nvim-linux-x86_64/bin
+  $HOME/.local/bin
+  $HOME/.nvm/versions/node/v24.12.0/bin
+  $HOME/.nvm/versions/node/v24.12.0/lib/node_modules/tree-sitter-cli
+  $path
+)
+
+# --- editor ---
+export EDITOR=nvim
+
+# --- opencode ---
+export OPENCODE_ENABLE_EXA=1
+export OPENCODE_EXPERIMENTAL_LSP_TOOL=true
+
+# --- aliases ---
+alias home="tmux new-session -A -s home"
+alias ii="xdg-open ."
+alias vim="nvim"
+alias vimdiff="nvim -d"
+alias ls="ls --color=auto"
+alias l="ls -lah --color=auto"
+
+# ..
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+
+# --- key bindings ---
+bindkey -v
+bindkey '^h' autosuggest-accept
+bindkey '^o' autosuggest-execute
+bindkey '^F' fzf-history-widget
+bindkey '^R' history-incremental-pattern-search-backward
+
+# --- completion: menu select with highlight + shift-tab reverse ---
+autoload -Uz compinit && compinit
+zmodload zsh/complist
+zstyle ':completion:*' menu select
+# Colorize the completion list like `ls` (dirs, executables, symlinks, etc.).
+export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;44'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+# Shift-Tab (back-tab) reverses through the menu. Use the terminfo entry so it
+# works regardless of which terminal sends ^[[Z vs another sequence. Bound in
+# both the main keymaps and the menuselect keymap.
+bindkey "$terminfo[kcbt]" reverse-menu-complete
+bindkey -M vicmd "$terminfo[kcbt]" reverse-menu-complete
+bindkey -M menuselect "$terminfo[kcbt]" reverse-menu-complete
+# Vi-style hjkl navigation inside the menu.
+bindkey -M menuselect 'h' vi-backward-char
+bindkey -M menuselect 'l' vi-forward-char
+bindkey -M menuselect 'k' vi-up-line-or-history
+bindkey -M menuselect 'j' vi-down-line-or-history
+
+# --- case-insensitive tab completion ---
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+
+# --- fzf ---
+[[ -r /usr/share/doc/fzf/examples/key-bindings.zsh ]] && \
+  source /usr/share/doc/fzf/examples/key-bindings.zsh
+
+# --- autojump ---
+[[ -r /usr/share/autojump/autojump.sh ]] && \
+  source /usr/share/autojump/autojump.sh
+
+# --- nvm (lazy) ---
+export NVM_DIR="$HOME/.nvm"
+_nvm_lazy_load() {
+  unset -f nvm node npm pnpm yarn npx corepack 2>/dev/null
+  [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
+  [[ -s "$NVM_DIR/bash_completion" ]] && source "$NVM_DIR/bash_completion"
+}
+nvm()     { _nvm_lazy_load && nvm "$@"; }
+node()    { _nvm_lazy_load && node "$@"; }
+npm()     { _nvm_lazy_load && npm "$@"; }
+pnpm()    { _nvm_lazy_load && pnpm "$@"; }
+yarn()    { _nvm_lazy_load && yarn "$@"; }
+npx()     { _nvm_lazy_load && npx "$@"; }
+corepack() { _nvm_lazy_load && corepack "$@"; }
+
+# --- temp directory helper ---
+function mtd() {
+  local target_dir="/tmp/"
+  local name=$1
+  if [ -z "$name" ]; then
+    name=$(openssl rand -hex 16)
+  fi
+  local dir_path="${target_dir}${name}"
+  local postfix=2
+  while [ -d "$dir_path" ]; do
+    name="${1}${postfix}"
+    dir_path="${target_dir}${name}"
+    ((postfix++))
+  done
+  mkdir "$dir_path"
+  cd "$dir_path"
+}
+
+# --- p10k config ---
+# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ -r "$HOME/.p10k.zsh" ]] && source "$HOME/.p10k.zsh"
