@@ -44,6 +44,9 @@ export EDITOR=nvim
 export OPENCODE_ENABLE_EXA=1
 export OPENCODE_EXPERIMENTAL_LSP_TOOL=true
 
+# --- joern ---
+export SHIFTLEFT_OCULAR_INSTALL_DIR=$HOME/bin/joern/joern-cli
+
 # --- aliases ---
 alias home="tmux new-session -A -s home"
 alias ii="xdg-open ."
